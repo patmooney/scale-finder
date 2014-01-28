@@ -1,14 +1,27 @@
 #!/usr/bin/perl
 use strict; use warnings;
 
-my @chromatic_scale = ( qw/ A Bb B C /, 'C#', qw/ D Eb E F /, 'F#', qw/ G Ab / );
+my @chromatic_scale = ( qw/ A Bb B C /, 'C#', qw/ D Eb E F /, 'F#', 'G', 'G#' );
 my @sequence = qw/ 2 2 1 2 2 2 1 /;
 my @note_types = qw/ Maj m m Maj Maj m dim /;
-my @modes = qw/Ionian Dorian Phrygian Lydian Mixolydian Aolian Lochrian/;
+my @modes = qw/Ionian Dorian Phrygian Lydian Mixolydian Aeolian Locrian/;
 
-my $note = $ARGV[0]; # A
-my $mode = $ARGV[1]; # Mixolydian
+my $note = uc($ARGV[0]); # A
+die "Invalid note input" if ( !$note || $note !~ /\A[A-Ga-g](#|b)?\z/ );
+if ( $note =~ m/(\w)#\z/ ){
+    $note = _normalise_sharp_note( $1, @chromatic_scale );
+}
+elsif ( $note =~ m/(\w)b\z/ ){
+    $note = _normalise_flat_note( $1, @chromatic_scale );
+}
 
+my $mode;
+foreach my $m ( @modes ){
+    if ( lc($m) eq lc($ARGV[1]) ){
+        $mode = $m; last;
+    }
+}
+die "Mode not recognised" if !$mode;
 
 # Mixolydian is the 5th scale, according to note_types it is a Major scale
 my $mode_index = mode_index( $mode ); # 4 ( as an array index )
@@ -35,22 +48,29 @@ while ( $sequence_index > -1 ) {
 my $major_scale = $chromatic_scale[$chromatic_index];
 
 # Our scale is A Mixolydian, the relative Major scale is D Major
-my @notes = reorder_to_note( $note, major_notes( $chromatic_index ) );
+my @major_scale_notes = major_notes( $chromatic_index );
+
+my @model_types = rewind_array( $mode_index, @note_types );
+my @modal_notes = rewind_array( $mode_index, @major_scale_notes );
+
+my $note_type_index = 0;
+my @chords = map { $_.$model_types[$note_type_index++]; } @modal_notes;
 
 print "\n\n";
 print "$note $mode Scale\n\n";
-print "Notes: " . join( ", ", @notes );
+print "Notes: " . join( ", ", @modal_notes ) . "\n";
+print "Chords: " . join( ", ", @chords );
 print "\n\n";
 
-sub reorder_to_note {
-    my $note = shift;
-    my @notes = @_;
+sub rewind_array {
+    my $steps = shift;
+    my @array = @_;
 
-    while ( $notes[0] ne $note ){
-        push @notes, shift @notes;
+    for ( my $i = 0; $i < $steps; $i++ ){
+        push @array, shift @array;
     }
 
-    return @notes;
+    return @array;
 }
 
 sub major_notes {
@@ -97,5 +117,29 @@ sub _item_index {
     foreach my $n ( @arr ) {
         return $ind if ( $n eq $item );
         $ind++;
+    }
+}
+sub _normalise_flat_note {
+    my $note = shift;
+
+    for ( my $i = 0; $i < scalar( @_ ); $i++ ){
+        if ( lc($_[$i]) eq lc($note) ){
+            if ( $i == 0 ) {
+                return $_[-1];
+            }
+            return $_[$i-1];
+        }
+    }
+}
+sub _normalise_sharp_note {
+    my $note = shift;
+
+    for ( my $i = 0; $i < scalar( @_ ); $i++ ){
+        if ( lc($_[$i]) eq lc($note) ){
+            if ( $i == $#_ ) {
+                return $_[0];
+            }
+            return $_[$i+1];
+        }
     }
 }
