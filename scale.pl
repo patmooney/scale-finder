@@ -6,13 +6,14 @@ my @sequence = qw/ 2 2 1 2 2 2 1 /;
 my @note_types = qw/ Maj m m Maj Maj m dim /;
 my @modes = qw/Ionian Dorian Phrygian Lydian Mixolydian Aeolian Locrian/;
 
-my $note = uc($ARGV[0]); # A
-die "Invalid note input" if ( !$note || $note !~ /\A[A-Ga-g](#|b)?\z/ );
-if ( $note =~ m/(\w)#\z/ ){
-    $note = _normalise_sharp_note( $1, @chromatic_scale );
+my ( $note, $tone ) = $ARGV[0] =~ m/\A([a-g]{1})(b|\#)?\z/i;
+die "Invalid note input" unless $note;
+
+if ( $tone eq '#' ){
+    $note = _normalise_sharp_note( $note, @chromatic_scale );
 }
-elsif ( $note =~ m/(\w)b\z/ ){
-    $note = _normalise_flat_note( $1, @chromatic_scale );
+elsif ( $tone eq 'b' ){
+    $note = _normalise_flat_note( $note, @chromatic_scale );
 }
 
 my $mode;
