@@ -6,8 +6,12 @@ my @sequence = qw/ 2 2 1 2 2 2 1 /;
 my @note_types = qw/ Maj m m Maj Maj m dim /;
 my @modes = qw/Ionian Dorian Phrygian Lydian Mixolydian Aeolian Locrian/;
 
+unless ( $ARGV[0] && $ARGV[1] ){
+    help("Arguments Required");
+}
+
 my ( $note, $tone ) = $ARGV[0] =~ m/\A([a-g]{1})(b|\#)?\z/i;
-die "Invalid note input" unless $note;
+help( "Invalid note input") unless $note;
 
 if ( $tone eq '#' ){
     $note = _normalise_sharp_note( $note, @chromatic_scale );
@@ -22,7 +26,7 @@ foreach my $m ( @modes ){
         $mode = $m; last;
     }
 }
-die "Mode not recognised" if !$mode;
+help( "Mode not recognised" ) if !$mode;
 
 # Mixolydian is the 5th scale, according to note_types it is a Major scale
 my $mode_index = mode_index( $mode ); # 4 ( as an array index )
@@ -57,7 +61,7 @@ my @modal_notes = rewind_array( $mode_index, @major_scale_notes );
 my $note_type_index = 0;
 my @chords = map { $_.$model_types[$note_type_index++]; } @modal_notes;
 
-print "\n\n";
+print "\n";
 print "$note $mode Scale\n\n";
 print "Notes: " . join( ", ", @modal_notes ) . "\n";
 print "Chords: " . join( ", ", @chords );
@@ -143,4 +147,15 @@ sub _normalise_sharp_note {
             return $_[$i+1];
         }
     }
+}
+
+sub help {
+    my ( $msg ) = @_;
+    print "\n$msg\n\n";
+    print "First agument should be the name of a note from the chromatic scale... one of:\n";
+    print join( ', ', @chromatic_scale );
+    print "\n\nSecond argument should be the name of a scale/mode... one of:\n";
+    print join( ', ', @modes );
+    print "\n\n";
+    exit(1);
 }
